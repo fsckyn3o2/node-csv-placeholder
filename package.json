@@ -1,0 +1,20 @@
+{
+  "name": "csv-placeholder",
+  "description": "node-csv-placeholder",
+  "version": "1.0.0",
+  "main": "main.js",
+  "scripts": {
+    "start": "",
+    "test": "node main.js run --data ./test/data.csv --template ./test/template.tpl --constant ./test/constant.cfg --vars ./test/vars.cfg --placeholder ./test/placeholder.cfg"
+  },
+  "author": "fsckyn3o2",
+  "license": "GNU General Public License v3.0",
+  "dependencies": {
+    "csv": "^6.2.0",
+    "mathjs": "^11.2.1",
+    "moment": "^2.29.4",
+    "properties-reader": "^2.2.0",
+    "sqlite3": "^5.1.1",
+    "yargs": "^17.5.1"
+  }
+}
