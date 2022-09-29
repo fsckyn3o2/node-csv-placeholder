@@ -26,6 +26,12 @@ function Helper(context) {
     this.getDataKey = () => this._dataKey;
     this.format = (pattern) => eval(pattern);
     this.math = (a) => math.chain(a);
+    this.notEmpty = (test, value) => test ? value : '';
+    this.trim = (value) => value.replaceAll('  ', ' ').trim();
+    this.switch = (value, testArr, newArr, defaultValue = '') => {
+      const i = testArr.indexOf(value);
+      return i>=0 ? newArr[i] : defaultValue;
+    };
 }
 
 function loadVars(path) {

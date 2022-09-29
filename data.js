@@ -11,7 +11,7 @@
  *   rowIndex=${helper.getDataKey()}
  *   pid=bull${helper.get('mynum')}
  *   ppid=${helper.format("10${mynum}") + 1}
- *   ppidGeek=${helper.math( helper.format("10${mynum}") ).add(1).done()} // thanks 'mathjs.org' XD
+ *   ppidGeek=${helper.math("10${mynum}").add(1).done()} // thanks 'mathjs.org' XD
  *
  * placeholder.cfg :
  *   INSERT_BS001=INSERT INTO bullshit (id, insert_date, username, header1, header2) VALUES ('bbs000', '${const.insertDate}', '${const.user}', '${header1}', '${header2}');
@@ -45,11 +45,18 @@
  *   a. constant -> constant.load('$5')
  *   b. vars -> vars.load('$4')
  *   c. placeholder -> placeholder.load('$3')
+ *
  *   d. data -> csv.read('$1')
- *   e. template -> template.read('$2') -- RENDER FOR EACH DATA ROW
+ *        -> d.1 : vars.apply -- to apply row data on vars.cfg
+ *        -> d.2 : placeholder.apply -- to apply row data on placeholder.cfg
+ *        -> d.3 : template.render -- to render row data with [template.tpl] (which can be an array)
+ *
+ *   e. rendered row is write in output directory
  *
  */
 
+const fs = require('fs');
+const Path = require('path')
 const constant = require('./constant');
 const vars = require('./vars');
 const placeholder = require('./placeholder');
@@ -57,7 +64,7 @@ const csv = require('./csv');
 const template = require('./template');
 const {render} = require("./template");
 
-function run(csvPath, templatePath, placeholderPath, varsPath, constantPath) {
+function run(csvPath, templatePath, placeholderPath, varsPath, constantPath, outputPath = null, outputExt = '.sql', allInOne = true, stdoutput = true, clean = true) {
 
 console.log(`Run data with parameters :
   - csvPath :\t\t ${csvPath}
@@ -65,6 +72,10 @@ console.log(`Run data with parameters :
   - placeholderPath :\t ${placeholderPath}
   - varsPath :\t\t ${varsPath}
   - constantPath :\t ${constantPath}
+  - outputPath :\t ${outputPath}
+  - outputExt :\t ${outputExt}
+  - stdOutput :\t ${stdoutput}
+  - clean :\t ${clean}
 `);
 
     const _const = constant.load(constantPath);
@@ -72,24 +83,49 @@ console.log(`Run data with parameters :
     const _placeholders = placeholder.load(placeholderPath);
 
     const result = [];
+
+    if(!Array.isArray(templatePath)) templatePath = [templatePath];
+
+    templatePath = templatePath.map(tplPath => [tplPath, outputPath + Path.sep + Path.basename(Path.basename(tplPath), Path.extname(tplPath)) + outputExt]);
+
+    if(clean && fs.existsSync(outputPath)) {
+        console.log('Cleanup output files.');
+        templatePath.forEach(([tplPath, tplOutputPath]) => fs.unlinkSync(tplOutputPath));
+        if(allInOne) fs.unlinkSync(outputPath + '/all-in-one' + outputExt);
+    }
+
+
+    console.log("\n---- OUTPUT ----\n----------------\n");
+
     csv.read(csvPath, ';', 1, (rowIndex, row) => {
+
         const context = {
             ...row,
             cts: _const,
-            vars: vars.apply(_vars, rowIndex, row),
+            vars: {},
             plh: {}
         };
+
+        context.vars = vars.apply(_vars, rowIndex, context);
 
         for (const [k, p] of Object.entries(_placeholders)) {
             context.plh[k] = placeholder.apply(p, context); // You can use Placeholder inside Placeholder
         }
 
-        template.render(templatePath, context, (renderedRow) => {
-            result.push(renderedRow);
-            console.log(renderedRow);
+        templatePath.forEach(([tplPath, tplOutputPath])=> {
+            template.render(tplPath, context, (renderedRow) => {
+                result.push(renderedRow);
+
+                if(outputPath) {
+                    template.save(tplOutputPath, renderedRow);
+                    if(allInOne) template.save(outputPath + '/all-in-one' + outputExt, renderedRow);
+                }
+
+                if(stdoutput) console.log(renderedRow);
+            });
         });
 
-    }, () => { console.log('!THE END! -- Stdout export'); console.log(result.join("\n"));} );
+    }, () => { });
 }
 
 

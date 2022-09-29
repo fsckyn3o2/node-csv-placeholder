@@ -7,6 +7,7 @@ const parser = require("./variable-parser");
 
 const helper = {
     date: (pattern) => moment().format(pattern),
+    notEmpty: (test, value) => test ? value : ''
 }
 
 function loadConstant(path) {
