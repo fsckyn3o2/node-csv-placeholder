@@ -10,32 +10,36 @@ const Path = require("path");
 function Helper(context) {
     Object.entries(context).forEach(([key, value]) => this[key] = value);
     this.notEmpty = (test, value) => test?value:'';
+    this.equals = (expectedValue, value, result) => expectedValue === value ? result : '';
 }
 
-function renderTemplate(path, context, renderCallback) {
+function loadTemplate(path) {
+    let result = '';
+    if(fs.existsSync(path)) {
+        result = fs.readFileSync(path, {flag: 'r'});
+    }
+    return result;
+}
+
+function renderTemplate(template, context, renderCallback) {
 
     const _helper = new Helper({...context});
     const _context = {helper: _helper, ...context};
     const result = [];
+    const tplLines = template.toString().replace(/\r\n/g, '\n').split('\n');
 
-    rl.createInterface({
-        input: fs.createReadStream(path),
-        output: process.stdout,
-        terminal: false
-    })
-    .on('line', (line) => result.push(parser.parse(line, _context)) )
-    .on('close', () => renderCallback(result.join("\n")) );
+    for(let line of tplLines) {
+        result.push(parser.parse(line, _context));
+    }
+    renderCallback(result.join('\n'));
 }
 
-function saveRenderedTemplate(targetPath, data) {
-    if(fs.existsSync(targetPath)) {
-        fs.appendFile(targetPath, data, (err) => (err) ? console.log('TEMPLATE SAVING ERROR', err): null);
-    } else {
-        fs.writeFile(targetPath, data, (err) => (err) ? console.log('TEMPLATE SAVING ERROR', err): null);
-    }
+function renderedTemplateToFile(writeStream, data) {
+    writeStream.write(data);
 }
 
 module.exports = {
+    load: loadTemplate,
     render: renderTemplate,
-    save: saveRenderedTemplate
+    saveToFile: renderedTemplateToFile
 }

@@ -42,16 +42,26 @@
  *
  *
  * 0. npm run start ./test.csv ./template.tpl ./placeholder.config ./vars.config ./constant.config
- *   a. constant -> constant.load('$5')
- *   b. vars -> vars.load('$4')
- *   c. placeholder -> placeholder.load('$3')
+ *   a. constant -> constant.load('csvPath')
+ *   b. vars -> vars.load('varsPath')
+ *   c. placeholder -> placeholder.load('placeholderPath')
+ *   d. template -> template.load('templatePath')
  *
- *   d. data -> csv.read('$1')
+ *   {
+ *       This script use only files output
+ *       Section "Output directory processing" contains stuff for that.
+ *
+ *       TODO extract section "Output directory processing" from data to a new "runOnFile" command.
+ *       TODO create new command "runOnHttp" to do same with HTTP POST input for example.
+ *
+ *   }
+ *
+ *   e. data -> csv.read('$1')
  *        -> d.1 : vars.apply -- to apply row data on vars.cfg
  *        -> d.2 : placeholder.apply -- to apply row data on placeholder.cfg
  *        -> d.3 : template.render -- to render row data with [template.tpl] (which can be an array)
  *
- *   e. rendered row is write in output directory
+ *   f. rendered row is write in output directory
  *
  */
 
@@ -63,6 +73,7 @@ const placeholder = require('./placeholder');
 const csv = require('./csv');
 const template = require('./template');
 const {render} = require("./template");
+const stream = require("stream");
 
 function run(csvPath, templatePath, placeholderPath, varsPath, constantPath, outputPath = null, outputExt = '.sql', allInOne = true, stdoutput = true, clean = true) {
 
@@ -78,26 +89,66 @@ console.log(`Run data with parameters :
   - clean :\t ${clean}
 `);
 
+    console.log('Prepare modules :')
     const _const = constant.load(constantPath);
+    console.log("  - constant loaded");
     const _vars = vars.load(varsPath);
+    console.log("  - variable loaded");
     const _placeholders = placeholder.load(placeholderPath);
+    console.log("  - placeholder loaded");
 
-    const result = [];
 
-    if(!Array.isArray(templatePath)) templatePath = [templatePath];
+    const templates = (!Array.isArray(templatePath)?[templatePath]:templatePath)
+        .map(tplPath => ({
+                tplPath: tplPath,
+                tplContent: template.load(tplPath),
+                outputPath: false
+            })
+        );
+    console.log("  - template loaded");
 
-    templatePath = templatePath.map(tplPath => [tplPath, outputPath + Path.sep + Path.basename(Path.basename(tplPath), Path.extname(tplPath)) + outputExt]);
+    // --- Output directory processing ----
+    // ------------------------------------
+    if(outputPath !== null && fs.existsSync(outputPath)) {
 
-    if(clean && fs.existsSync(outputPath)) {
-        console.log('Cleanup output files.');
-        templatePath.forEach(([tplPath, tplOutputPath]) => fs.unlinkSync(tplOutputPath));
-        if(allInOne) fs.unlinkSync(outputPath + '/all-in-one' + outputExt);
+        console.log("  - prepare output");
+
+        allInOneStream = false;
+        if(allInOne) {
+            if(clean) {
+                allInOneStream = fs.createWriteStream(outputPath + '/all-in-one' + outputExt,{flags: 'w', autoClose: true, emitClose: true});
+            } else {
+                allInOneStream = fs.createWriteStream(outputPath + '/all-in-one' + outputExt, {flags: 'a', autoClose: true, emitClose: true});
+            }
+        }
+
+        templates.forEach(tplObj => {
+            tplObj.outputPath = outputPath ?
+                outputPath + Path.sep + Path.basename(Path.basename(tplObj.tplPath), Path.extname(tplObj.tplPath)) + outputExt : false;
+
+            if(clean) {
+                tplObj.outputStream = fs.createWriteStream(tplObj.outputPath, {flags: 'w', autoClose: true, emitClose: true});
+            } else {
+                tplObj.outputStream = fs.createWriteStream(tplObj.outputPath, {flags: 'a', autoClose: true, emitClose: true});
+            }
+            tplObj.outputStreamAllInOne = allInOneStream;
+        });
     }
 
 
-    console.log("\n---- OUTPUT ----\n----------------\n");
+    if(stdoutput) {
+        console.log("\n---- OUTPUT ----\n----------------\n");
+    }
 
+    // ------------------------------------
+    // ------------------------------------
+
+
+    // Data source reading and rendering :
     csv.read(csvPath, ';', 1, (rowIndex, row) => {
+
+        let currentStatus =  `\r(...) processing line ${rowIndex} - `;
+        if(!stdoutput) process.stdout.write(currentStatus);
 
         const context = {
             ...row,
@@ -106,26 +157,29 @@ console.log(`Run data with parameters :
             plh: {}
         };
 
+        // For rowdata - load vars
         context.vars = vars.apply(_vars, rowIndex, context);
 
+        // For rowdata - load placeholder
         for (const [k, p] of Object.entries(_placeholders)) {
             context.plh[k] = placeholder.apply(p, context); // You can use Placeholder inside Placeholder
         }
 
-        templatePath.forEach(([tplPath, tplOutputPath])=> {
-            template.render(tplPath, context, (renderedRow) => {
-                result.push(renderedRow);
+        // For rowdata - render template
+        templates.forEach(({tplPath, outputPath, tplContent, outputStream, outputStreamAllInOne}) => {
+            template.render(tplContent, context, (renderedRow) => {
 
                 if(outputPath) {
-                    template.save(tplOutputPath, renderedRow);
-                    if(allInOne) template.save(outputPath + '/all-in-one' + outputExt, renderedRow);
+                    template.saveToFile(outputStream, renderedRow);
+                    template.saveToFile(outputStreamAllInOne, renderedRow);
                 }
 
                 if(stdoutput) console.log(renderedRow);
+                else process.stdout.write(currentStatus + ` current template - ${tplPath}` );
             });
         });
 
-    }, () => { });
+    });
 }
 
 

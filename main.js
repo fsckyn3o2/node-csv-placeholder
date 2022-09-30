@@ -22,7 +22,7 @@ const argv = yargs
             type: 'string'
         },
         template: {
-            description: 'path of template file ./test/template.tpl',
+            description: 'array of template file : ./test/template.tpl, multiple [template] parameters accepted',
             alias: 't',
             type: 'string'
         },

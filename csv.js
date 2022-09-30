@@ -5,23 +5,15 @@ const fs = require("fs");
 const { parse } = require("csv-parse");
 
 
-function readCsv(path, delimiter = ';', startLine= 1, rowCallback, endCallback) {
-    let rowIndex = 0;
+function readCsv(path, delimiter = ';', startLine= 1, rowCallback) {
+    let rowIndex = startLine;
     let csvHeader = null;
     fs.createReadStream(path)
-        .pipe(parse({delimiter: delimiter, from_line: startLine}))
+        .pipe(parse({delimiter: delimiter, from_line: startLine, columns: true, skip_empty_lines: true}))
         .on("data", (row) => {
-            if(rowIndex === 0) {
-                csvHeader = row;
-            } else {
-                const rowByHeader = row.reduce(
-                    (result, field, index) => ({ ...result, [csvHeader[index]]: field }), {}
-                );
-                rowCallback(rowIndex, rowByHeader);
-            }
+            rowCallback(rowIndex, row);
             rowIndex++;
         })
-        .on("end", endCallback)
         .on("error", function (error) {
             console.log('CSV ERROR : ', error.message);
         });
