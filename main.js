@@ -11,6 +11,11 @@ const argv = yargs
             alias: 'd',
             type: 'string'
         },
+        dataOpt: {
+            description: 'options for data parser, mutiple [dataOpt] parameters accepted',
+            alias: 'D',
+            type: 'string'
+        },
         vars: {
             description: 'path of vars file ./test/vars.cgf',
             alias: 'v',
@@ -66,5 +71,5 @@ const argv = yargs
     .alias('help', 'h').argv;
 
 if (argv._.includes('run')) {
-    data.run(argv.data, argv.template, argv.placeholder, argv.vars, argv.constant, argv.output, argv.outputext, argv.allinone, argv.stdoutput, argv.clean);
+    data.run(argv.data, argv.dataOpt, argv.template, argv.placeholder, argv.vars, argv.constant, argv.output, argv.outputext, argv.allinone, argv.stdoutput, argv.clean);
 }

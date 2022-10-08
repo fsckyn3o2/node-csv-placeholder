@@ -9,7 +9,7 @@
   ${plh.SELECT_BS_HEADER1}
   ${plh.SELECT_BS_USERNAME}
 
-  -- with 'notempty' condition : value of 'notempty' is '${notempty}'
+  -- notEmpty of column 'notempty' contains something
   ${helper.notEmpty("${notempty}", plh.INSERT_BS001)}
   ${helper.notEmpty("${notempty}", plh.INSERT_BS002)}
 

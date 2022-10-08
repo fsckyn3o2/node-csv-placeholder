@@ -70,15 +70,29 @@ const Path = require('path')
 const constant = require('./constant');
 const vars = require('./vars');
 const placeholder = require('./placeholder');
-const csv = require('./csv');
 const template = require('./template');
-const {render} = require("./template");
-const stream = require("stream");
 
-function run(csvPath, templatePath, placeholderPath, varsPath, constantPath, outputPath = null, outputExt = '.sql', allInOne = true, stdoutput = true, clean = true) {
+const inputCsv = require('./input_csv');
+const inputXlsx = require('./input_xlsx');
+
+function getDataParser(dataPath, dataOpt) {
+    if(dataPath.lastIndexOf('.csv') === dataPath.length - 4) {
+        return inputCsv;
+    } else if(
+        dataPath.lastIndexOf('.xlsx') === dataPath.length - 5 ||
+        dataPath.lastIndexOf('.xls') === dataPath.length - 4
+    ) {
+        return inputXlsx;
+    } else {
+        return {read: () => console.error(`Data parser not found for paht : ${dataPath}`)};
+    }
+}
+
+function run(dataPath, dataOpt, templatePath, placeholderPath, varsPath, constantPath, outputPath = null, outputExt = '.sql', allInOne = true, stdoutput = true, clean = true) {
 
 console.log(`Run data with parameters :
-  - csvPath :\t\t ${csvPath}
+  - dataPath :\t\t ${dataPath}
+  - dataOpt :\t\t ${dataOpt}
   - templatePath :\t ${templatePath}
   - placeholderPath :\t ${placeholderPath}
   - varsPath :\t\t ${varsPath}
@@ -135,7 +149,6 @@ console.log(`Run data with parameters :
         });
     }
 
-
     if(stdoutput) {
         console.log("\n---- OUTPUT ----\n----------------\n");
     }
@@ -143,9 +156,9 @@ console.log(`Run data with parameters :
     // ------------------------------------
     // ------------------------------------
 
-
     // Data source reading and rendering :
-    csv.read(csvPath, ';', 1, (rowIndex, row) => {
+    const dataParser = getDataParser(dataPath, dataOpt);
+    dataParser.read(dataPath, dataOpt, (rowIndex, row) => {
 
         let currentStatus =  `\r(...) processing line ${rowIndex} - `;
         if(!stdoutput) process.stdout.write(currentStatus);

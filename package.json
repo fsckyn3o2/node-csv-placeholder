@@ -5,7 +5,8 @@
   "main": "main.js",
   "scripts": {
     "start": "",
-    "test": "node main.js run --data ./test/data.csv --template ./test/template.tpl --constant ./test/constant.cfg --vars ./test/vars.cfg --placeholder ./test/placeholder.cfg"
+    "test": "node main.js run --data ./test/data.csv --template test/template1.tpl --template test/template2.tpl --constant ./test/constant.cfg --vars ./test/vars.cfg --placeholder ./test/placeholder.cfg",
+    "test-xls": "node main.js run --data ./test/data.xls --template test/template1.tpl --template test/template2.tpl --constant ./test/constant.cfg --vars ./test/vars.cfg --placeholder ./test/placeholder.cfg"
   },
   "author": "fsckyn3o2",
   "license": "GNU General Public License v3.0",
@@ -14,7 +15,9 @@
     "mathjs": "^11.2.1",
     "moment": "^2.29.4",
     "properties-reader": "^2.2.0",
+    "read-excel-file": "^5.5.0",
     "sqlite3": "^5.1.1",
+    "xlsx": "^0.18.5",
     "yargs": "^17.5.1"
   }
 }
