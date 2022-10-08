@@ -1,5 +1,7 @@
 # node-csv-placeholder
 
+( supports csv AND excel files :)  )
+
 Have fun to complete boring tasks... With __Node-Csv-Placeholder__ !
 
 <img src="csv_placeholder_diagram.png" />
@@ -44,8 +46,11 @@ Generation of constant, variable, placeholder and template needs basics function
 ## Script Parameters
 
 - __data:__
-  - path of data file in csv with \';\' as separator ONLY! and Utf8 ONLY!'.
+  - path of data file, support csv, excel (xls, xlsx) (see dataOpt parameters to customize data file parser)
   - alias: 'd'
+- __dataOp:__
+  - options for data parser, multiple [dataOpt] parameters accepted.
+  - alias: 'D'
 - __vars:__
   - path of vars file ./test/vars.cgf.
   - alias: 'v'

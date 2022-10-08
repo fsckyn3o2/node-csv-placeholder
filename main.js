@@ -7,12 +7,12 @@ const argv = yargs
     .command('run [data] [vars] [placeholder] [constant] [template] [output]',
         'Render row data with a template, placeholder, vars, constant and write it in an output directory', {
         data: {
-            description: 'path of data file in csv with \';\' as separator ONLY! and Utf8 ONLY!',
+            description: 'path of data file, support csv, excel (xls, xlsx) (see dataOpt parameters to customize data file parser)',
             alias: 'd',
             type: 'string'
         },
         dataOpt: {
-            description: 'options for data parser, mutiple [dataOpt] parameters accepted',
+            description: 'options for data parser, multiple [dataOpt] parameters accepted',
             alias: 'D',
             type: 'string'
         },
