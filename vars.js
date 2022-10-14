@@ -10,29 +10,11 @@
  *                      - ${helper.format("10${mynum}") + 1}
  */
 
-const helperC = require('./constant').helper;
-
 const cfgReader = require('properties-reader');
 const moment = require("moment");
 const math = require('mathjs');
 const parser = require('./variable-parser');
-const {help} = require("mathjs");
-
-function Helper(context) {
-    Object.entries(context).forEach(([key, value]) => this[key] = value);
-    Object.entries(helperC).forEach(([key, value]) => this[key] = value);
-
-    this.get = (key) => this[key];
-    this.getDataKey = () => this._dataKey;
-    this.format = (pattern) => eval(pattern);
-    this.math = (a) => math.chain(a);
-    this.notEmpty = (test, value) => test ? value : '';
-    this.trim = (value) => value.replaceAll('  ', ' ').trim();
-    this.switch = (value, testArr, newArr, defaultValue = '') => {
-      const i = testArr.indexOf(value);
-      return i>=0 ? newArr[i] : defaultValue;
-    };
-}
+const Helper = require('./helpers')
 
 function loadVars(path) {
     const result = new Object();
@@ -45,9 +27,8 @@ function loadVars(path) {
 
 function applyData(loadedVars, dataKey, data) {
     let result = {};
-    let _helper = new Helper({_dataKey: dataKey, ...data});
 
-    const context = {helper: _helper, _dataKey: dataKey, ...data};
+    const context = {helper: new Helper({_dataKey: dataKey, ...data}), _dataKey: dataKey, ...data};
     for(const [key, value] of Object.entries(loadedVars)) {
         result[key] = parser.parse(value, context);
     }
@@ -57,5 +38,4 @@ function applyData(loadedVars, dataKey, data) {
 module.exports = {
     load: loadVars,
     apply: applyData,
-    helper: Helper
 }

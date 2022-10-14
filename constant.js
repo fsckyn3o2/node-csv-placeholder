@@ -4,22 +4,17 @@
 const moment = require('moment');
 const cfgReader = require('properties-reader');
 const parser = require("./variable-parser");
-
-const helper = {
-    date: (pattern) => moment().format(pattern),
-    notEmpty: (test, value) => test ? value : ''
-}
+const Helper = require('./helpers');
 
 function loadConstant(path) {
     const result = {};
     const properties = cfgReader(path);
     properties.each((key, value) => {
-        result[key] = parser.parse(value, {helper: helper});
+        result[key] = parser.parse(value, {helper: new Helper({})});
     });
     return result;
 }
 
 module.exports = {
     load: loadConstant,
-    helper: helper
 }

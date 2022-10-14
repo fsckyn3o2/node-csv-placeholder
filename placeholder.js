@@ -3,6 +3,7 @@
  */
 const cfgReader = require('properties-reader');
 const parser = require("./variable-parser");
+const Helper = require('./helpers')
 
 function loadPlaceholder(path) {
     const result = {};
@@ -12,7 +13,8 @@ function loadPlaceholder(path) {
 }
 
 function applyContext(currentPlaceholder, context) {
-    return parser.parse(currentPlaceholder, context);
+    const _context = {helper: new Helper(context), ...context};
+    return parser.parse(currentPlaceholder, _context);
 }
 
 module.exports = {

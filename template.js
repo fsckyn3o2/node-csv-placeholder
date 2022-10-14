@@ -22,9 +22,7 @@ function loadTemplate(path) {
 }
 
 function renderTemplate(template, context, renderCallback) {
-
-    const _helper = new Helper({...context});
-    const _context = {helper: _helper, ...context};
+    const _context = {helper: new Helper({...context}), ...context};
     const result = [];
     const tplLines = template.toString().replace(/\r\n/g, '\n').split('\n');
 

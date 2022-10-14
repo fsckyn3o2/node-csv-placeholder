@@ -183,8 +183,12 @@ console.log(`Run data with parameters :
             template.render(tplContent, context, (renderedRow) => {
 
                 if(outputPath) {
-                    template.saveToFile(outputStream, renderedRow);
-                    template.saveToFile(outputStreamAllInOne, renderedRow);
+                    if(outputStream) {
+                        template.saveToFile(outputStream, renderedRow);
+                    }
+                    if(outputStreamAllInOne) {
+                        template.saveToFile(outputStreamAllInOne, renderedRow);
+                    }
                 }
 
                 if(stdoutput) console.log(renderedRow);
