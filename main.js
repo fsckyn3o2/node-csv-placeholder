@@ -16,14 +16,19 @@ const argv = yargs
             alias: 'D',
             type: 'string'
         },
+        constant: {
+            description: 'path of constant file ./test/constant.cfg',
+            alias: 'c',
+            type: 'string'
+        },
         vars: {
             description: 'path of vars file ./test/vars.cgf',
             alias: 'v',
             type: 'string'
         },
-        constant: {
-            description: 'path of constant file ./test/constant.cfg',
-            alias: 'c',
+        placeholder: {
+            description: 'path of placeholder file ./test/placeholder.cfg',
+            alias: 'p',
             type: 'string'
         },
         template: {
@@ -31,9 +36,9 @@ const argv = yargs
             alias: 't',
             type: 'string'
         },
-        placeholder: {
-            description: 'path of placeholder file ./test/placeholder.cfg',
-            alias: 'p',
+        mastertemplate: {
+            description: 'array of master template files : ./test/mastemplate.tpl, multiple [master template] parameters accepted',
+            alias: 'm',
             type: 'string'
         },
         clean: {
@@ -71,5 +76,5 @@ const argv = yargs
     .alias('help', 'h').argv;
 
 if (argv._.includes('run')) {
-    data.run(argv.data, argv.dataOpt, argv.template, argv.placeholder, argv.vars, argv.constant, argv.output, argv.outputext, argv.allinone, argv.stdoutput, argv.clean);
+    data.run(argv.data, argv.dataOpt, argv.mastertemplate, argv.template, argv.placeholder, argv.vars, argv.constant, argv.output, argv.outputext, argv.allinone, argv.stdoutput, argv.clean);
 }

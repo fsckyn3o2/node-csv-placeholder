@@ -3,9 +3,7 @@
  */
 
 const fs = require('fs');
-const rl = require('readline');
 const parser = require("./variable-parser");
-const Path = require("path");
 
 function Helper(context) {
     Object.entries(context).forEach(([key, value]) => this[key] = value);
@@ -17,6 +15,8 @@ function loadTemplate(path) {
     let result = '';
     if(fs.existsSync(path)) {
         result = fs.readFileSync(path, {flag: 'r'});
+    } else {
+        console.error(`Template not found : ${path}`);
     }
     return result;
 }
@@ -32,8 +32,14 @@ function renderTemplate(template, context, renderCallback) {
     renderCallback(result.join('\n'));
 }
 
-function renderedTemplateToFile(writeStream, data) {
-    writeStream.write(data);
+function renderedTemplateToFile(writeStream, data, writerCallback) {
+    if(data) {
+        if(writerCallback) {
+            writeStream.write(data, writerCallback);
+        } else {
+            writeStream.write(data);
+        }
+    }
 }
 
 module.exports = {

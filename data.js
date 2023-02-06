@@ -71,9 +71,11 @@ const constant = require('./constant');
 const vars = require('./vars');
 const placeholder = require('./placeholder');
 const template = require('./template');
+const masterTemplate = require('./master-template');
 
 const inputCsv = require('./input_csv');
 const inputXlsx = require('./input_xlsx');
+const EventEmitter = require("events");
 
 function getDataParser(dataPath, dataOpt) {
     if(dataPath.lastIndexOf('.csv') === dataPath.length - 4) {
@@ -88,19 +90,20 @@ function getDataParser(dataPath, dataOpt) {
     }
 }
 
-function run(dataPath, dataOpt, templatePath, placeholderPath, varsPath, constantPath, outputPath = null, outputExt = '.sql', allInOne = true, stdoutput = true, clean = true) {
+function run(dataPath, dataOpt, masterTemplatePath, templatePath, placeholderPath, varsPath, constantPath, outputPath = null, outputExt = '.sql', allInOne = true, stdoutput = true, clean = true) {
 
 console.log(`Run data with parameters :
-  - dataPath :\t\t ${dataPath}
-  - dataOpt :\t\t ${dataOpt}
-  - templatePath :\t ${templatePath}
-  - placeholderPath :\t ${placeholderPath}
-  - varsPath :\t\t ${varsPath}
-  - constantPath :\t ${constantPath}
-  - outputPath :\t ${outputPath}
-  - outputExt :\t ${outputExt}
-  - stdOutput :\t ${stdoutput}
-  - clean :\t ${clean}
+  - dataPath :\t\t${dataPath}
+  - dataOpt :\t\t${dataOpt}
+  - masterTemplate :\t${masterTemplatePath}
+  - template :\t\t${templatePath}
+  - placeholder :\t${placeholderPath}
+  - varsPath :\t\t${varsPath}
+  - constant :\t\t${constantPath}
+  - output :\t\t${outputPath}
+  - outputExt :\t\t${outputExt}
+  - stdOutput :\t\t${stdoutput}
+  - clean :\t\t${clean}
 `);
 
     console.log('Prepare modules :')
@@ -120,6 +123,19 @@ console.log(`Run data with parameters :
             })
         );
     console.log("  - template loaded");
+
+
+    let masterTemplates = false;
+    if(masterTemplate) {
+        masterTemplates = (!Array.isArray(masterTemplatePath) ? [masterTemplatePath] : masterTemplatePath)
+        .map(tplPath => ({
+                tplPath: tplPath,
+                tplContent: masterTemplate.load(tplPath),
+                outputPath: false
+            })
+        );
+    }
+    console.log("   - master template loaded");
 
     // --- Output directory processing ----
     // ------------------------------------
@@ -157,6 +173,13 @@ console.log(`Run data with parameters :
     // ------------------------------------
 
     // Data source reading and rendering :
+    const EventEmitter = require('events');
+
+    const dataProcessEmitter = new EventEmitter();
+    dataProcessEmitter.on('finish', () => {
+        console.log('\n\nFinished\n');
+    });
+
     const dataParser = getDataParser(dataPath, dataOpt);
     dataParser.read(dataPath, dataOpt, (rowIndex, row) => {
 
@@ -178,24 +201,29 @@ console.log(`Run data with parameters :
             context.plh[k] = placeholder.apply(p, context); // You can use Placeholder inside Placeholder
         }
 
-        // For rowdata - render template
+        // For rowdata - render template (row by row)
         templates.forEach(({tplPath, outputPath, tplContent, outputStream, outputStreamAllInOne}) => {
             template.render(tplContent, context, (renderedRow) => {
 
                 if(outputPath) {
                     if(outputStream) {
-                        template.saveToFile(outputStream, renderedRow);
+                        template.saveToFile(outputStream, renderedRow,
+                            () => dataProcessEmitter.emit('finish_row')
+                        );
                     }
                     if(outputStreamAllInOne) {
-                        template.saveToFile(outputStreamAllInOne, renderedRow);
+                        template.saveToFile(outputStreamAllInOne, renderedRow,
+                            () => dataProcessEmitter.emit('finish_allinone_row')
+                        );
                     }
                 }
 
-                if(stdoutput) console.log(renderedRow);
+                if(stdoutput && !masterTemplates) console.log(renderedRow);
                 else process.stdout.write(currentStatus + ` current template - ${tplPath}` );
             });
         });
-
+    }, () => {
+        dataProcessEmitter.emit('finish');
     });
 }
 
